@@ -1,0 +1,6 @@
+# Secrets — see .env.example for the template.
+.env
+
+# Local editor / OS noise
+*.swp
+.DS_Store

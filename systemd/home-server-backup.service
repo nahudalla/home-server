@@ -1,0 +1,14 @@
+[Unit]
+Description=Home-server config backup (export service config, commit & push to GitHub)
+Documentation=https://github.com/nahudalla/home-server
+# Needs the network up (NPM API + git push) and Docker running (NPM container).
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# __REPO_ROOT__ is substituted by restore/bootstrap.sh at install time.
+WorkingDirectory=__REPO_ROOT__
+ExecStart=/usr/bin/env bash __REPO_ROOT__/backup/backup.sh
+# Surface failures in `systemctl --user status`.
+TimeoutStartSec=300

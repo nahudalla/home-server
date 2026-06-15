@@ -1,0 +1,81 @@
+# Home-server services — single source of truth for replication.
+#
+# Each service mirrors a container originally started by hand with
+# `docker run --restart=unless-stopped`. Bring everything up with:
+#
+#   docker compose -f compose/docker-compose.yml up -d
+#
+# Secrets come from a `.env` file next to this one (see ../.env.example).
+# Networks are declared here with pinned names + explicit subnets so a fresh
+# machine reproduces them exactly. This repo OWNS npm-net/postgres-net/mssql-net;
+# the sibling ../ai-agents repo attaches its sandboxes to npm-net/postgres-net,
+# so this compose stack must be brought up BEFORE ai-agents launches sandboxes
+# (its idempotent `docker network create` then no-ops). See ../AGENTS.md.
+
+name: home-server
+
+services:
+  nginx-proxy-manager:
+    image: jc21/nginx-proxy-manager:latest
+    container_name: nginx-proxy-manager
+    restart: unless-stopped
+    networks:
+      - npm-net
+    ports:
+      - "80:80"     # public HTTP
+      - "81:81"     # admin UI + REST API (used by the backup script)
+      - "443:443"   # public HTTPS
+    volumes:
+      - /home/nahuel/npm/data:/data
+      - /home/nahuel/npm/letsencrypt:/etc/letsencrypt
+
+  postgres:
+    image: postgres:18
+    container_name: postgres
+    restart: unless-stopped
+    networks:
+      - postgres-net
+    ports:
+      - "127.0.0.1:5432:5432"   # localhost only
+    environment:
+      # Development instance — trust auth, data is NOT treated as durable.
+      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_USER: postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql
+
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: mssql-dev
+    restart: unless-stopped
+    networks:
+      - mssql-net
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?set MSSQL_SA_PASSWORD in .env}
+      MSSQL_PID: developer
+    volumes:
+      - mssql-data:/var/opt/mssql
+
+networks:
+  npm-net:
+    name: npm-net
+    ipam:
+      config:
+        - subnet: 172.16.204.0/24
+  postgres-net:
+    name: postgres-net
+    ipam:
+      config:
+        - subnet: 172.16.201.0/24
+  mssql-net:
+    name: mssql-net
+    ipam:
+      config:
+        - subnet: 172.16.203.0/24
+
+volumes:
+  postgres-data:
+    name: postgres-data
+  mssql-data:
+    name: mssql-data
