@@ -1,0 +1,13 @@
+[Unit]
+Description=Daily home-server config backup
+Documentation=https://github.com/nahudalla/home-server
+
+[Timer]
+# Once a day; Persistent catches up a missed run after the machine was off.
+OnCalendar=daily
+Persistent=true
+# Spread the load / avoid exactly-midnight contention.
+RandomizedDelaySec=15min
+
+[Install]
+WantedBy=timers.target
