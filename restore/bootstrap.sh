@@ -178,6 +178,37 @@ note "For the timer to run while you're logged out, enable lingering:"
 note "    sudo loginctl enable-linger $USER"
 note "(see AGENTS.md for the keyring caveat with gh tokens in headless sessions)"
 
+# --- 10. dynamic DNS (Cloud DNS) updater -------------------------------------
+step "Setting up the dynamic DNS updater"
+DYNDNS_CONF="$REPO_ROOT/dyndns/dyndns.conf"
+# shellcheck source=/dev/null
+[ -f "$DYNDNS_CONF" ] && . "$DYNDNS_CONF"
+note "DynDNS keeps ${DYNDNS_RECORD:-the configured record} pointed at this host's public IP."
+note "Prerequisites (see docs/superpowers/specs/2026-06-16-dyndns-cloud-dns-design.md):"
+note "  1. Create the service account + zone IAM binding scoped to that one record."
+note "  2. Set DYNDNS_ZONE in $DYNDNS_CONF."
+note "  3. Place the SA key at ${DYNDNS_SA_KEY_FILE:-the configured path} (chmod 600)."
+
+for u in home-server-dyndns.service home-server-dyndns.timer; do
+  sed "s|__REPO_ROOT__|$REPO_ROOT|g" "$REPO_ROOT/systemd/$u" >"$unit_dir/$u"
+done
+systemctl --user daemon-reload
+
+if [ -n "${DYNDNS_ZONE:-}" ] && [ -n "${DYNDNS_SA_KEY_FILE:-}" ] && [ -f "${DYNDNS_SA_KEY_FILE:-/nonexistent}" ]; then
+  systemctl --user enable --now home-server-dyndns.timer
+  ok "dyndns timer enabled"
+  if "$REPO_ROOT/dyndns/dyndns.sh" --dry-run; then
+    ok "dyndns dry-run succeeded"
+  else
+    note "dyndns dry-run reported a problem — check the config and SA key"
+    note "until fixed, you can stop the timer with: systemctl --user disable --now home-server-dyndns.timer"
+  fi
+else
+  note "dyndns not fully configured yet — units installed but timer NOT enabled."
+  note "Once DYNDNS_ZONE is set and the SA key is in place, enable it with:"
+  note "    systemctl --user enable --now home-server-dyndns.timer"
+fi
+
 step "Done"
 ok "Services are up and NPM config restored. Run a backup now with:"
 echo "    $REPO_ROOT/backup/backup.sh --dry-run"

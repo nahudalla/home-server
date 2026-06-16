@@ -4,3 +4,6 @@
 # Local editor / OS noise
 *.swp
 .DS_Store
+
+# CodeGraph local index
+.codegraph/

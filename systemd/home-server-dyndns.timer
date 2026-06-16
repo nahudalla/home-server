@@ -1,0 +1,15 @@
+[Unit]
+Description=Periodic home-server dynamic DNS update
+Documentation=https://github.com/nahudalla/home-server
+
+[Timer]
+# Check shortly after boot, then every 5 minutes.
+OnBootSec=1min
+OnUnitActiveSec=5min
+# Catch up a missed run after the machine was off.
+Persistent=true
+# Avoid firing exactly on the minute boundary.
+RandomizedDelaySec=30s
+
+[Install]
+WantedBy=timers.target
