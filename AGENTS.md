@@ -14,6 +14,8 @@ to GitHub. Read this before changing anything here.
 | `backup/lib/common.sh` | Shared helpers (logging, env, git commit/push) |
 | `backup/services/*.sh` | One backup module per service (`npm.sh` today) |
 | `backups/<service>/` | Committed plaintext config snapshots |
+| `dyndns/dyndns.sh` | Dynamic DNS updater: points a Cloud DNS A record at the host's public IP |
+| `dyndns/dyndns.conf` | Non-secret DynDNS config (committed; the secret is the off-repo SA key file) |
 | `systemd/*.{service,timer}` | `--user` units that run the daily backup |
 | `restore/bootstrap.sh` | Guided fresh-machine setup + config restore |
 | `docs/superpowers/specs/` | Design specs |
@@ -87,13 +89,44 @@ Helpers from `backup/lib/common.sh` available inside a module: `log`, `warn`,
 `die`, `require_cmd`, `$BACKUPS_DIR`, `$REPO_ROOT`. No registration step — any
 `*.sh` in `backup/services/` is picked up automatically.
 
+## Dynamic DNS (Cloud DNS)
+
+`dyndns/dyndns.sh` keeps a single IPv4 `A` record (`ndonet.nahueldallacamina.com.ar`
+by default) pointed at the host's current public IP, via GCP Cloud DNS. A
+`systemd --user` timer (`home-server-dyndns.timer`) runs it every 5 minutes; it
+only calls Cloud DNS when the public IP actually changed.
+
+- **Config (non-secret, committed):** `dyndns/dyndns.conf` — project, managed-zone
+  name, record FQDN, TTL, and the *path* to the SA key. `.env` is untouched:
+  dyndns adds no secrets to it.
+- **The one secret:** the service-account JSON key *file* at `DYNDNS_SA_KEY_FILE`,
+  kept on the host outside this repo (chmod 600), never committed.
+- **Auth:** the script activates the SA in an isolated `CLOUDSDK_CONFIG` under
+  `$XDG_STATE_HOME/home-server-dyndns`, so it never disturbs your interactive
+  `gcloud` login.
+- **Least privilege:** the SA is granted `roles/dns.admin` *on the managed zone*
+  with an IAM Condition restricting `ResourceRecordSet` writes to exactly that one
+  `A` record. Full recipe + rationale in
+  `docs/superpowers/specs/2026-06-16-dyndns-cloud-dns-design.md`.
+
+Run manually:
+
+```bash
+dyndns/dyndns.sh --dry-run   # detect + report the intended change, write nothing
+dyndns/dyndns.sh             # create/update the record if the public IP changed
+```
+
+If `DYNDNS_ZONE` is unset or the SA key is missing, the script exits non-zero with
+a clear message and `restore/bootstrap.sh` installs the units but leaves the timer
+disabled until you finish setup.
+
 ## Restore (new machine)
 
 `restore/bootstrap.sh` is interactive: checks prereqs → `compose up -d` → waits
 for NPM → guides you through the NPM admin account → has you recreate the
 secret-bearing objects (certs, access lists) in the UI → automatically restores
 the saved hosts/streams with their `*_id` references remapped → installs the
-backup timer.
+backup **and dynamic-DNS** timers.
 
 ## Upgrade-validation procedure (IMPORTANT)
 
