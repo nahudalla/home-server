@@ -1,0 +1,14 @@
+[Unit]
+Description=Home-server dynamic DNS update (point the configured Cloud DNS A record at the host's public IP)
+Documentation=https://github.com/nahudalla/home-server
+# Needs outbound network (public-IP lookup + Cloud DNS API).
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# __REPO_ROOT__ is substituted by restore/bootstrap.sh at install time.
+WorkingDirectory=__REPO_ROOT__
+ExecStart=/usr/bin/env bash __REPO_ROOT__/dyndns/dyndns.sh
+# Surface failures in `systemctl --user status`.
+TimeoutStartSec=120
