@@ -48,6 +48,12 @@ if [ "${#services[@]}" -eq 0 ]; then
   done
 fi
 
+# Sync before writing anything (only when we intend to push), so the later push
+# can't be rejected as non-fast-forward. Skipped for --dry-run / --no-push.
+if [ "${DRY_RUN:-0}" != "1" ] && [ "${NO_PUSH:-0}" != "1" ]; then
+  sync_with_remote
+fi
+
 ran=()
 for svc in "${services[@]}"; do
   module="$SERVICES_DIR/$svc.sh"

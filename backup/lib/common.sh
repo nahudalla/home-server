@@ -37,6 +37,36 @@ load_env() {
   set +a
 }
 
+# --- git sync ----------------------------------------------------------------
+# Fast-forward the current branch to its origin counterpart over HTTPS (gh
+# credential helper) BEFORE we write any backup files, so the later push can't
+# be rejected as non-fast-forward after main advanced on GitHub (e.g. a merged
+# PR). Read-only fetch + ff-only merge; never rewrites local history. On any
+# problem it warns and continues — a stale local branch shouldn't block a backup
+# (the push will surface a real divergence).
+# Must run with a clean working tree (call before exporting).
+sync_with_remote() {
+  command -v gh >/dev/null 2>&1 || { warn "gh not found — skipping pre-sync"; return 0; }
+  local https_url branch
+  https_url="$(cd "$REPO_ROOT" && gh repo view --json url -q .url 2>/dev/null)" || true
+  [ -n "$https_url" ] || { warn "could not resolve GitHub URL — skipping pre-sync"; return 0; }
+  branch="$(git -C "$REPO_ROOT" symbolic-ref --short HEAD)"
+  if ! git -C "$REPO_ROOT" \
+        -c credential.helper= -c 'credential.helper=!gh auth git-credential' \
+        fetch "${https_url}.git" "$branch" >/dev/null 2>&1; then
+    warn "pre-sync fetch failed — continuing with local state"
+    return 0
+  fi
+  if git -C "$REPO_ROOT" merge-base --is-ancestor HEAD FETCH_HEAD 2>/dev/null; then
+    git -C "$REPO_ROOT" merge --ff-only FETCH_HEAD >/dev/null 2>&1 \
+      && log "synced $branch with origin (fast-forwarded)" \
+      || warn "fast-forward failed — continuing with local state"
+  elif ! git -C "$REPO_ROOT" merge-base --is-ancestor FETCH_HEAD HEAD 2>/dev/null; then
+    warn "local $branch has diverged from origin/$branch — resolve manually; the push will likely be rejected"
+  fi
+  # else: HEAD is ahead of origin (local commits not yet pushed) — nothing to do.
+}
+
 # --- git commit + push -------------------------------------------------------
 # Stage backups/, and if anything changed commit and push to origin over HTTPS
 # using gh as the credential helper (no SSH, no token on the command line).
