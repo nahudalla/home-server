@@ -1,0 +1,48 @@
+[
+  {
+    "access_list_id": 0,
+    "advanced_config": "",
+    "allow_websocket_upgrade": false,
+    "block_exploits": true,
+    "caching_enabled": false,
+    "certificate_id": 5,
+    "domain_names": [
+      "npm.ndonet.nahueldallacamina.com.ar"
+    ],
+    "enabled": true,
+    "forward_host": "192.168.68.55",
+    "forward_port": 81,
+    "forward_scheme": "http",
+    "hsts_enabled": false,
+    "hsts_subdomains": false,
+    "http2_support": true,
+    "id": 2,
+    "locations": [],
+    "meta": {},
+    "ssl_forced": true,
+    "trust_forwarded_proto": false
+  },
+  {
+    "access_list_id": 1,
+    "advanced_config": "location ~ ^/ {\n    auth_basic            \"Authorization required\";\n    auth_basic_user_file  /data/access/1;\n\n    set $target_container \"fallback\";\n    set $target_port \"\";\n\n    # Regex extracts BOTH the port and the container name\n    if ($host ~* ^(?<port>\\d+)-(?<container>[a-zA-Z0-9_\\-]+)\\.sandbox\\.ndonet\\.nahueldallacamina\\.com\\.ar$) {\n        set $target_container $container;\n        set $target_port $port;\n    }\n\n    if ($target_container = \"fallback\") {\n        return 404 \"Error: Subdomain did not match dynamic routing regex.\";\n    }\n\n    resolver 127.0.0.11 valid=30s;\n    \n    # Dynamically route to the specific port requested in the URL\n    proxy_pass http://$target_container:$target_port;\n\n    proxy_set_header Host $host;\n    proxy_set_header X-Real-IP $remote_addr;\n    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n    proxy_set_header X-Forwarded-Proto $scheme;\n    \n    proxy_http_version 1.1;\n    proxy_set_header Upgrade $http_upgrade;\n    proxy_set_header Connection $http_connection;\n}",
+    "allow_websocket_upgrade": true,
+    "block_exploits": true,
+    "caching_enabled": false,
+    "certificate_id": 6,
+    "domain_names": [
+      "*.sandbox.ndonet.nahueldallacamina.com.ar"
+    ],
+    "enabled": true,
+    "forward_host": "example.com",
+    "forward_port": 80,
+    "forward_scheme": "http",
+    "hsts_enabled": false,
+    "hsts_subdomains": false,
+    "http2_support": true,
+    "id": 6,
+    "locations": [],
+    "meta": {},
+    "ssl_forced": true,
+    "trust_forwarded_proto": false
+  }
+]

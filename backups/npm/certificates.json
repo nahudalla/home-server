@@ -1,0 +1,44 @@
+[
+  {
+    "domain_names": [
+      "ndonet.nahueldallacamina.com.ar"
+    ],
+    "expires_on": "2026-09-12 14:39:41",
+    "id": 1,
+    "meta": {
+      "key_type": "ecdsa"
+    },
+    "nice_name": "ndonet.nahueldallacamina.com.ar",
+    "provider": "letsencrypt"
+  },
+  {
+    "domain_names": [
+      "*.ndonet.nahueldallacamina.com.ar"
+    ],
+    "expires_on": "2026-09-06 21:44:58",
+    "id": 5,
+    "meta": {
+      "dns_challenge": true,
+      "dns_provider": "google",
+      "key_type": "ecdsa",
+      "propagation_seconds": 120
+    },
+    "nice_name": "*.ndonet.nahueldallacamina.com.ar",
+    "provider": "letsencrypt"
+  },
+  {
+    "domain_names": [
+      "*.sandbox.ndonet.nahueldallacamina.com.ar"
+    ],
+    "expires_on": "2026-09-06 22:01:48",
+    "id": 6,
+    "meta": {
+      "dns_challenge": true,
+      "dns_provider": "google",
+      "key_type": "ecdsa",
+      "propagation_seconds": 120
+    },
+    "nice_name": "*.sandbox.ndonet.nahueldallacamina.com.ar",
+    "provider": "letsencrypt"
+  }
+]

@@ -1,0 +1,12 @@
+[
+  {
+    "description": "What to show when Nginx is hit with an unknown Host",
+    "id": "default-site",
+    "meta": {
+      "html": "",
+      "redirect": ""
+    },
+    "name": "Default Site",
+    "value": "404"
+  }
+]

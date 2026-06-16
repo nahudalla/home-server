@@ -1,0 +1,16 @@
+[
+  {
+    "clients": [],
+    "id": 1,
+    "items": [
+      {
+        "meta": {},
+        "username": "nahuel"
+      }
+    ],
+    "meta": {},
+    "name": "Sandbox",
+    "pass_auth": false,
+    "satisfy_any": false
+  }
+]
