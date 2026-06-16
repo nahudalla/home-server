@@ -77,6 +77,7 @@ is_ipv4() {
 public_ip() {
   local ip svc
   for svc in https://api.ipify.org https://checkip.amazonaws.com; do
+    # curl/parse failure for this service: fall through to the next one
     ip="$(curl -fsS --max-time 10 "$svc" 2>/dev/null | tr -d '[:space:]')" || continue
     if is_ipv4 "$ip"; then printf '%s' "$ip"; return 0; fi
   done
@@ -94,7 +95,7 @@ gcloud auth activate-service-account --key-file="$DYNDNS_SA_KEY_FILE" --quiet \
 current="$(gcloud dns record-sets list \
   --project="$DYNDNS_PROJECT" --zone="$DYNDNS_ZONE" \
   --name="$DYNDNS_RECORD" --type=A \
-  --format='value(rrdatas[0])' 2>/dev/null || true)"
+  --format='value(rrdatas[0])' || true)"
 
 if [ "$current" = "$IP" ]; then
   log "unchanged ($IP) — nothing to do"

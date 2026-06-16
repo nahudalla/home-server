@@ -201,6 +201,7 @@ if [ -n "${DYNDNS_ZONE:-}" ] && [ -n "${DYNDNS_SA_KEY_FILE:-}" ] && [ -f "${DYND
     ok "dyndns dry-run succeeded"
   else
     note "dyndns dry-run reported a problem — check the config and SA key"
+    note "until fixed, you can stop the timer with: systemctl --user disable --now home-server-dyndns.timer"
   fi
 else
   note "dyndns not fully configured yet — units installed but timer NOT enabled."
