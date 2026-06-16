@@ -52,6 +52,17 @@ What is and isn't captured (NPM):
   (`meta.dns_provider_credentials`), basic-auth passwords, user password hashes,
   NPM's `keys.json`. These are recreated interactively by `restore/bootstrap.sh`.
 
+### Embedded secrets in free-text fields
+
+Field-level stripping cannot catch a secret pasted *inside* a free-text config
+field — e.g. a `Bearer <token>` inside an nginx `advanced_config` block. As a
+safety net, `commit_and_push` runs a **secret tripwire**: it aborts the commit
+(nothing is committed or pushed) if the staged diff contains a high-confidence
+secret (private-key blocks, `Bearer <token>`, `secret/api_key/token/password`
+assignments). Patterns live in `backup/lib/common.sh` and are intentionally
+narrow to avoid false positives. If it trips: remove or externalize the secret in
+NPM (don't store live tokens in `advanced_config`), then re-run the backup.
+
 Run manually:
 
 ```bash

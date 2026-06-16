@@ -50,6 +50,16 @@ commit_and_push() {
     return 0
   fi
 
+  # Secret tripwire. Field-level stripping can't catch secrets embedded in
+  # free-text config (e.g. a Bearer token inside an nginx advanced_config block),
+  # so refuse to commit if the added lines contain a high-confidence secret.
+  # Patterns are deliberately narrow to avoid false positives on normal config.
+  if git -C "$REPO_ROOT" diff --cached -- "$BACKUPS_DIR" | grep -E '^\+' \
+       | grep -Eiq 'BEGIN [A-Z ]*PRIVATE KEY|Bearer [A-Za-z0-9._-]{20,}|(secret|api[_-]?key|token|password)[\"'\'' ]*[:=][\"'\'' ]*[A-Za-z0-9._-]{16,}'; then
+    git -C "$REPO_ROOT" reset -q -- "$BACKUPS_DIR"
+    die "possible secret detected in staged backup — aborting (nothing committed). Inspect with: git -C $REPO_ROOT diff -- backups/ ; see AGENTS.md (embedded secrets)."
+  fi
+
   if [ "${DRY_RUN:-0}" = "1" ]; then
     log "DRY_RUN=1 — changes detected but not committing. Diff:"
     git -C "$REPO_ROOT" --no-pager diff --cached --stat -- "$BACKUPS_DIR" >&2
